@@ -43,13 +43,12 @@ class RepositoryType(graphene.ObjectType):
 	license = graphene.Field(License)
 
 	def resolve_license(self, info, **kwargs):
-		cached_license = cache.get(self.license)
+		cache_key = 'license-{}'.format(self.name)
+		cached_license = cache.get(cache_key)
 		if cached_license:
-			return cached_license
+			return convertJsonToObject(cached_license, "license")
 
-		resolved_license =  repoLicenseResolver(self.license)
-		cache.set(self.license, resolved_license, CACHE_TIME)
-		return resolved_license
+		return repoLicenseResolver(self.license, self.name)
 
 class githubUserType(graphene.ObjectType):
 	login = graphene.String()
@@ -72,13 +71,12 @@ class githubUserType(graphene.ObjectType):
 	repos =  graphene.List(RepositoryType)
 
 	def resolve_repos(self, info, **kwargs):
-		cached_login = cache.get(self.login)
-		if cached_login:
-			return cached_login
+		cache_key = 'repo-{}'.format(self.login)
+		cached_user_repo = cache.get(cache_key)
+		if cached_user_repo:
+			return convertJsonToObject(cached_user_repo, "repo")
 
-		resolved_repos = resolveUserRepos(self.login)
-		cache.set(self.login, resolved_repos, CACHE_TIME)
-		return resolved_repos
+		return resolveUserRepos(self.login)
 
 class Query(graphene.ObjectType):
 	user = graphene.Field(
@@ -92,20 +90,18 @@ class Query(graphene.ObjectType):
 		)
 	
 	def resolve_user(self, info, username):
-		cached_username = cache.get(username)
-		print("cached data>>>>>>>", cached_username)
-		if cached_username:
-			return convertJsonToObject(cached_username, "user")
+		cache_key = 'user-{}'.format(username)
+		cached_user = cache.get(cache_key)
+		if cached_user:
+			return convertJsonToObject(cached_user, "user")
 
 		return resolveUser(username)
-		# cac?he.set(username, resolved_user, CACHE_TIME)
-		# return resolved_user
 
 	def resolve_repo(self, info, username):
-		# cached_repo = cache.get(username)
-		# if cached_repo:
-		# 	return cached_repo
+		cache_key = 'repo-{}'.format(username)
+		cached_repo = cache.get(cache_key)
+		if cached_repo:
+			return convertJsonToObject(cached_repo, "user")
+			return cached_repo
 
 		return resolveUserRepos(username)
-		# cache.set(username, resolved_repos, CACHE_TIME)
-		# return resolved_repos

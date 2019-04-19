@@ -11,7 +11,10 @@ def getUser(username):
 		url = BASE_URL + 'users/{}'.format(username)
 		user = requests.get(url)
 		user = user.json()
-		cache.set(username, user, CACHE_TIME)
+
+		cache_key = 'user-{}'.format(username)
+		cache.set(cache_key, user, CACHE_TIME)
+
 		userObject = convertJsonToObject(user, "user")
 		return userObject
 	except Exception as e:
@@ -32,6 +35,10 @@ def getUserRepos(username):
 		url = BASE_URL + 'users/{}/repos'.format(username)
 		repos = requests.get(url)
 		repos = repos.json()
+
+		cache_key = 'repo-{}'.format(username)
+		cache.set(cache_key, repos, CACHE_TIME)
+
 		reposObject = convertJsonToObject(repos, "repos")
 		return reposObject
 	except Exception as e:

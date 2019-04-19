@@ -1,12 +1,18 @@
 from .apiMethods import getUserRepos, getUser, convertJsonToObject
+from django.core.cache import cache
+CACHE_TIME = 86400
 
-def repoLicenseResolver(license):
-  if license is None:
-    return
-  return convertJsonToObject(license, "license")
+def repoLicenseResolver(license, reponame):
+	if license is None:
+		return
+
+	cache_key = 'license-{}'.format(reponame)
+	cache.set(cache_key, repos, CACHE_TIME)
+
+	return convertJsonToObject(license, "license")
 
 def resolveUserRepos(username):
-  return getUserRepos(username)
+	return getUserRepos(username)
 
 def resolveUser(username):
-  return getUser(username)
+	return getUser(username)
