@@ -44,6 +44,21 @@ def getUserRepos(username):
 	except Exception as e:
 		error = convertJsonToObject({"error": e}, "error")
 
+def getUserProjects(username):
+	try:
+		url = BASE_URL + 'users/{}/projects'.format(username)
+		projects = requests.get(url, headers={'Accept': 'application/vnd.github.inertia-preview+json'})
+		projects = projects.json()
+		print(">>>>>>>>>>>>>", projects)
+		cache_key = 'project-{}'.format(username)
+		cache.set(cache_key, projects, CACHE_TIME)
+
+		projectObject = convertJsonToObject(projects, "project")
+		return projectObject
+	except Exception as e:
+		print("errro>>>>>>>>>>>",e)
+		error = convertJsonToObject({"error": e}, "error")
+
 def convertJsonToObject(jsonData, name):
 	if type(jsonData) is list:
 		objectData = [namedtuple(name, data.keys())(*data.values()) for data in jsonData]

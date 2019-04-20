@@ -20,8 +20,10 @@ from django.urls import path
 
 from graphene_django.views import GraphQLView
 from graphqlDemo.githubAPI import schema
+from graphqlDemo import utility
 
 urlpatterns = [
 	path('admin/', admin.site.urls),
+	path('clear_cache', utility.celarCache),
 	path('graphql/', csrf_exempt(GraphQLView.as_view(graphiql=True))),
 ]
