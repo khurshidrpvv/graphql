@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+  web:
+    image: 2758/python-graphql 
+    links: 
+      - memcached
+    ports:
+      - "8000:8000"
+  memcached:
+    image: memcached:latest
+    entrypoint:
+      - memcached
+      - -m 64
+    

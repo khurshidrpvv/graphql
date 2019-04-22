@@ -2,3 +2,6 @@ Django==2.1
 graphene==2.1.3
 graphene-django==2.2.0
 requests==2.21.0
+python-memcached==1.59
+typing==3.6.4
+gunicorn==19.9.0
