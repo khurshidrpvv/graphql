@@ -1,111 +1,155 @@
-import graphene
+from graphene import (
+	ObjectType,
+	String,
+	List,
+	Field,
+	ID,
+	Boolean,
+	Int,
+	NonNull
+)
 from django.core.cache import cache
 from graphene_django.types import DjangoObjectType
 
 from .resolvers import (
 	repoLicenseResolver, 
 	resolveUserRepos,
-	resolveUser
+	resolveUser,
+	resolveUserProject,
+	resolveProjectCreator
 )
 
 from .apiMethods import convertJsonToObject
 
 CACHE_TIME = 86400
 
-class License(graphene.ObjectType):
-	key = graphene.String()
-	name = graphene.String()
-	spdx_id = graphene.String()
-	url = graphene.String()
-	node_id = graphene.String()
+class License(ObjectType):
+	key = String()
+	name = String()
+	spdx_id = String()
+	url = String()
+	node_id = String()
 
-class RepositoryType(graphene.ObjectType):
-	id = graphene.ID()
-	node_id = graphene.String()
-	name = graphene.String()
-	full_name = graphene.String()
-	private = graphene.Boolean()
-	description = graphene.String()
-	url = graphene.String()
-	git_url = graphene.String()
-	homepage = graphene.String()
-	language = graphene.String()
-	forks_count = graphene.Int()
-	open_issues_count =graphene.Int()
-	has_issues = graphene.Boolean()
-	has_wiki = graphene.Boolean()
-	pushed_at = graphene.String()
-	created_at = graphene.String()
-	updated_at = graphene.String()
-	subscribers_count = graphene.Int()
-	default_branch = graphene.String()
-	archived = graphene.Boolean()
-	license = graphene.Field(License)
+class RepositoryType(ObjectType):
+	id = ID()
+	node_id = String()
+	name = String()
+	full_name = String()
+	private = Boolean()
+	description = String()
+	url = String()
+	git_url = String()
+	homepage = String()
+	language = String()
+	forks_count = Int()
+	open_issues_count =Int()
+	has_issues = Boolean()
+	has_wiki = Boolean()
+	pushed_at = String()
+	created_at = String()
+	updated_at = String()
+	subscribers_count = Int()
+	default_branch = String()
+	archived = Boolean()
+	license = Field(License)
 
 	def resolve_license(self, info, **kwargs):
-		cached_license = cache.get(self.license)
+		cache_key = 'license-{}'.format(self.name)
+		cached_license = cache.get(cache_key)
 		if cached_license:
-			return cached_license
+			return convertJsonToObject(cached_license, "license")
 
-		resolved_license =  repoLicenseResolver(self.license)
-		cache.set(self.license, resolved_license, CACHE_TIME)
-		return resolved_license
+		return repoLicenseResolver(self.license, self.name)
 
-class githubUserType(graphene.ObjectType):
-	login = graphene.String()
-	id = graphene.ID()
-	node_id = graphene.String()
-	type = graphene.String()
-	site_admin = graphene.String()
-	name = graphene.String()
-	company = graphene.String()
-	blog = graphene.String()
-	location = graphene.String()
-	email = graphene.String()
-	bio = graphene.String()
-	public_repos = graphene.Int()
-	followers = graphene.Int()
-	following = graphene.Int()
-	created_at = graphene.String()
-	updated_at = graphene.String()
-	username = graphene.String() #used for input
-	repos =  graphene.List(RepositoryType)
+class githubUserType(ObjectType):
+	login = String()
+	id = ID()
+	node_id = String()
+	type = String()
+	site_admin = String()
+	name = String()
+	company = String()
+	blog = String()
+	location = String()
+	email = String()
+	bio = String()
+	public_repos = Int()
+	followers = Int()
+	following = Int()
+	created_at = String()
+	updated_at = String()
+	username = String() #used for input
+	repos =  List(RepositoryType)
 
 	def resolve_repos(self, info, **kwargs):
-		cached_login = cache.get(self.login)
-		if cached_login:
-			return cached_login
+		cache_key = 'repo-{}'.format(self.login)
+		cached_user_repo = cache.get(cache_key)
+		if cached_user_repo:
+			return convertJsonToObject(cached_user_repo, "repo")
 
-		resolved_repos = resolveUserRepos(self.login)
-		cache.set(self.login, resolved_repos, CACHE_TIME)
-		return resolved_repos
+		return resolveUserRepos(self.login)
 
-class Query(graphene.ObjectType):
-	user = graphene.Field(
+class projectCreatorType(ObjectType):
+	login = String()
+	id = Int()
+	url = String()
+	type = String()
+	site_admin = String()
+class ProjectType(ObjectType):
+	owner_url = String()
+	url = String()
+	name = String()
+	body = String()
+	state = String()
+	creator = Field(projectCreatorType)
+	created_at= String()
+	updated_at = String()
+
+	def resolve_creator(self, info, **kwargs):
+		cache_key = 'creator-{}'.format(self.name)
+		cached_project_creator = cache.get(cache_key)
+		if cached_project_creator:
+			return convertJsonToObject(cached_project_creator, "creator")
+
+		return resolveProjectCreator(self.creator, self.name)
+
+
+class Query(ObjectType):
+	user = Field(
 			githubUserType,
-			username = graphene.NonNull(graphene.String)
+			username = NonNull(String)
 		)
 
-	repo = graphene.List(
+	repo = List(
 			RepositoryType,
-			username = graphene.NonNull(graphene.String)
+			username = NonNull(String)
+		)
+
+	project = List(
+			ProjectType,
+			username = NonNull(String)
 		)
 	
 	def resolve_user(self, info, username):
-		cached_username = cache.get(username)
-		print("cached data>>>>>>>", cached_username)
-		if cached_username:
-			return convertJsonToObject(cached_username, "user")
+		cache_key = 'user-{}'.format(username)
+		cached_user = cache.get(cache_key)
+		if cached_user:
+			return convertJsonToObject(cached_user, "user")
 
 		return resolveUser(username)
-		# cac?he.set(username, resolved_user, CACHE_TIME)
-		# return resolved_user
 
 	def resolve_repo(self, info, username):
-		# cached_repo = cache.get(username)
-		# if cached_repo:
-		# 	return cached_repo
+		cache_key = 'repo-{}'.format(username)
+		cached_repo = cache.get(cache_key)
+		if cached_repo:
+			return convertJsonToObject(cached_repo, "user")
 
 		return resolveUserRepos(username)
-		# cache.set(username, resolved_repos, CACHE_TIME)
-		# return resolved_repos
+
+	def resolve_project(self, info, username):
+		cache_key = 'project-{}'.format(username)
+		cached_project = cache.get(cache_key)
+		if cached_project:
+			return convertJsonToObject(cached_project, "project")
+
+		return resolveUserProject(username)
